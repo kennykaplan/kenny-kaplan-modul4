@@ -32,6 +32,7 @@
         return [243, 236, 224];
     }
 
+    var TAU = Math.PI * 2;
     var tick = function () {
         return new Promise(function (res) { setTimeout(res, 0); });
     };
@@ -137,5 +138,109 @@
         return c;
     }
 
-    window.KDSSculpture = { make: make };
+
+    /* The company name as the sculpture: letters with a fibrous thread texture and dust along the edges */
+    async function name(W, H, q, mobile) {
+        q = q || 1;
+        var c = document.createElement("canvas");
+        c.width = W; c.height = H;
+        var ctx = c.getContext("2d");
+        var r = rng(23);
+        var unit = Math.min(W / 2400, H / 900);
+        var lines = mobile ? ["Kaplan", "Digital", "Solutions"] : ["Kaplan Digital", "Solutions"];
+        var SANS = function (z) { return "500 " + z + 'px Geist, "Helvetica Neue", Arial, sans-serif'; };
+        var SERIF = function (z) { return "italic 400 " + z + 'px "Instrument Serif", Georgia, serif'; };
+        var fontOf = function (i, z) { return i === lines.length - 1 ? SERIF(z) : SANS(z); };
+        function setFont(i, z) {
+            ctx.font = fontOf(i, z);
+            if ("letterSpacing" in ctx) ctx.letterSpacing = (i === lines.length - 1 ? -0.02 : -0.04) * z + "px";
+        }
+        function widthAt(i, z) { setFont(i, z); return ctx.measureText(lines[i]).width; }
+
+        // size every line so the block fits the canvas; the serif line is set a touch larger (smaller x-height)
+        var maxW = W * (mobile ? 0.84 : 0.8), size = [], i, z;
+        for (i = 0; i < lines.length; i++) {
+            z = 200; size.push(z * maxW / widthAt(i, z));
+        }
+        if (mobile) {
+            var m = Math.min.apply(null, size);
+            size = size.map(function (v, k) { return k === lines.length - 1 ? Math.min(v, m * 1.1) : m; });
+        } else {
+            size[0] = Math.min(size[0], H * 0.5);
+            size[1] = Math.min(size[1], size[0] * 1.14);
+        }
+        var lead = mobile ? 0.98 : 0.92, base = [], y = 0;
+        // never let the block exceed the canvas: scale everything down together if needed
+        var est = size[0] * 0.72 + lead * size.slice(1).reduce(function (a, b) { return a + b; }, 0) + size[size.length - 1] * 0.2;
+        var fit = Math.min(1, H * 0.8 / est);
+        size = size.map(function (v) { return v * fit; });
+        for (i = 0; i < lines.length; i++) { y += i ? size[i] * lead : size[0] * 0.72; base.push(y); }
+        var blockH = base[base.length - 1] + size[size.length - 1] * 0.2 - 0;
+        var shift = (H - blockH) / 2;
+
+        function drawText(fill) {
+            ctx.textAlign = "center";
+            ctx.textBaseline = "alphabetic";
+            ctx.fillStyle = fill;
+            for (var k = 0; k < lines.length; k++) { setFont(k, size[k]); ctx.fillText(lines[k], W / 2, base[k] + shift); }
+        }
+
+        // 1) solid letters, a dark warm gradient for legibility
+        var g = ctx.createLinearGradient(0, 0, W, H);
+        g.addColorStop(0, "#1b1917"); g.addColorStop(0.55, "#2c2824"); g.addColorStop(1, "#4a4239");
+        drawText(g);
+        var top = shift, bottom = shift + blockH;
+
+        // 2) fibres, clipped to the letters
+        ctx.globalCompositeOperation = "source-atop";
+        ctx.lineCap = "round";
+        var N = Math.round(1100 * q);
+        for (var f = 0; f < N; f++) {
+            if (f % 250 === 249) await tick();
+            var x0 = r() * W * 1.1 - W * 0.05, y0 = top + r() * (bottom - top);
+            var len = (180 + r() * 620) * unit, wob = (r() - 0.5) * 40 * unit;
+            var light = r() < 0.7;
+            var col = light ? tone(0.45 + r() * 0.55) : tone(0.05 + r() * 0.2);
+            ctx.strokeStyle = "rgba(" + (col[0] | 0) + "," + (col[1] | 0) + "," + (col[2] | 0) + "," + (light ? 0.14 + r() * 0.22 : 0.25 + r() * 0.3).toFixed(2) + ")";
+            ctx.lineWidth = (0.7 + r() * 1.3) * unit;
+            ctx.beginPath();
+            ctx.moveTo(x0, y0);
+            ctx.bezierCurveTo(x0 + len * 0.33, y0 + wob, x0 + len * 0.66, y0 - wob, x0 + len, y0 + wob * 0.4);
+            ctx.stroke();
+        }
+        ctx.globalCompositeOperation = "source-over";
+
+        // 3) dust scattered from the letter edges
+        await tick();
+        var qw = Math.round(W / 4), qh = Math.round(H / 4);
+        var mc = document.createElement("canvas");
+        mc.width = qw; mc.height = qh;
+        var mctx = mc.getContext("2d", { willReadFrequently: true });
+        mctx.drawImage(c, 0, 0, qw, qh);
+        var d = mctx.getImageData(0, 0, qw, qh).data, edge = [];
+        function a(px, py) { return px < 0 || py < 0 || px >= qw || py >= qh ? 0 : d[(py * qw + px) * 4 + 3]; }
+        for (var yy = 0; yy < qh; yy++) {
+            for (var xx = 0; xx < qw; xx++) {
+                if (a(xx, yy) > 128 && (a(xx - 1, yy) < 100 || a(xx + 1, yy) < 100 || a(xx, yy - 1) < 100 || a(xx, yy + 1) < 100)) edge.push(xx, yy);
+            }
+        }
+        var M = Math.round(6500 * q), pairs = edge.length / 2;
+        if (pairs) {
+            for (var k = 0; k < M; k++) {
+                if (k % 2500 === 2499) await tick();
+                var e = ((r() * pairs) | 0) * 2;
+                var spread = (6 + r() * r() * 70) * unit;
+                var px2 = edge[e] * 4 + (r() + r() + r() - 1.5) * spread * 1.4;
+                var py2 = edge[e + 1] * 4 + (r() + r() + r() - 1.5) * spread * 1.4;
+                var cc = r() < 0.75 ? tone(0.04 + r() * 0.35) : tone(0.5 + r() * 0.4);
+                ctx.fillStyle = "rgba(" + (cc[0] | 0) + "," + (cc[1] | 0) + "," + (cc[2] | 0) + "," + (0.35 + r() * 0.5).toFixed(2) + ")";
+                ctx.beginPath();
+                ctx.arc(px2, py2, (0.6 + r() * r() * 2.2) * unit * 1.15, 0, TAU);
+                ctx.fill();
+            }
+        }
+        return c;
+    }
+
+    window.KDSSculpture = { make: make, name: name };
 })();

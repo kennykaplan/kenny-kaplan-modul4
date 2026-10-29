@@ -825,7 +825,9 @@
     /* Source: data-src (own image, needs CORS) or the procedural sculpture */
     function makeSource(mobile) {
         var light = coarse.matches || (engine && engine.lowPower);
-        return window.KDSSculpture.make(mobile ? 1200 : 2400, mobile ? 800 : 960, light ? 0.55 : 1);  // Promise
+        var q = light ? 0.55 : 1;
+        if (root.dataset.shape === "ribbon") return window.KDSSculpture.make(mobile ? 1200 : 2400, mobile ? 800 : 960, q);
+        return window.KDSSculpture.name(mobile ? 1000 : 2400, 900, q, mobile);  // Promise
     }
 
     /* ── page glue ─────────────────────────────────────────────────── */
@@ -840,7 +842,7 @@
 
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     var coarse = window.matchMedia("(hover: none), (pointer: coarse)");
-    if (coarse.matches && hint) hint.textContent = "Rör vid formen";
+    if (coarse.matches && hint) hint.textContent = "Rör vid namnet";
 
     var BG = hexToRgb(getComputedStyle(document.documentElement).getPropertyValue("--bg"), [0.925, 0.906, 0.863]);
     var engine = null, canvas = null, mobile = false, aspect = 2.5, loaded = false;
@@ -876,7 +878,6 @@
         if (mob !== mobile && loaded) { mobile = mob; load(); return; }
         mobile = mob;
         var band = { top: (navEl ? navEl.offsetHeight : 60) + 24, bottom: content.offsetTop - 8 };
-        if (mobile) band.bottom += content.offsetHeight * 0.25;
         var rect = computeRect(w, band);
         lastRect = rect;
         fallback.style.left = rect.x + "px";
@@ -1015,7 +1016,7 @@
 
         // wait for the display face so the wordmark is drawn in Archivo
         var fontReady = document.fonts && document.fonts.load
-            ? Promise.race([document.fonts.load('800 400px "Archivo"'), new Promise(function (r) { setTimeout(r, 1200); })])
+            ? Promise.race([Promise.all([document.fonts.load('500 200px "Geist"'), document.fonts.load('italic 400 200px "Instrument Serif"')]), new Promise(function (r) { setTimeout(r, 1200); })])
             : Promise.resolve();
         fontReady.catch(function () {}).then(function () {
             mobile = root.clientWidth < 640;
