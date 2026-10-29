@@ -31,19 +31,30 @@
 
 <main>
 
-    <section class="hero" id="hem">
-        <p class="label reveal">Kaplan Digital Solutions — Webb &amp; system</p>
-        <h1 class="hero__title" aria-label="Sajter och system som folk faktiskt använder.">
-            <span class="line"><span class="line__in">Sajter och</span></span>
-            <span class="line"><span class="line__in">system som</span></span>
-            <span class="line"><span class="line__in"><em>folk faktiskt</em></span></span>
-            <span class="line"><span class="line__in">använder.</span></span>
-        </h1>
-        <div class="hero__foot">
-            <p class="hero__lead reveal">Vi planerar, designar och bygger webbplatser och webbsystem för företag som vill ha något som fungerar på riktigt, inte bara något som ser bra ut i en presentation.</p>
-            <a href="#arbeten" class="scrollhint reveal" data-cursor="Ner">Se arbeten ↓</a>
+    <section class="lq" id="hem" data-hero>
+        <div class="lq__stage" aria-hidden="true"><canvas class="lq__fallback"></canvas></div>
+        <span class="sr-only">KDS – Kaplan Digital Solutions, ordmärke i partiklar som reagerar på muspekaren.</span>
+
+        <div class="lq__hint" aria-hidden="true">Rör dig över formen</div>
+        <div class="lq__spacer"></div>
+
+        <div class="lq__content">
+            <div>
+                <p class="label lq__eyebrow reveal">Kaplan Digital Solutions — Webb &amp; system</p>
+                <h1 class="lq__title" aria-label="Sajter och system som folk faktiskt använder.">
+                    <span class="line"><span class="line__in">Sajter och system</span></span>
+                    <span class="line"><span class="line__in">som <em>folk faktiskt</em></span></span>
+                    <span class="line"><span class="line__in">använder.</span></span>
+                </h1>
+            </div>
+            <div class="lq__aside">
+                <p class="lq__body reveal">Vi planerar, designar och bygger webbplatser och webbsystem för företag som vill ha något som fungerar på riktigt, inte bara något som ser bra ut i en presentation.</p>
+                <div class="lq__ctas reveal">
+                    <a href="#arbeten" class="lq__btn" data-cursor="Ner">Se arbeten <span aria-hidden="true">→</span></a>
+                    <a href="#kontakt" class="lq__txt" data-cursor="Skriv">Kontakta oss</a>
+                </div>
+            </div>
         </div>
-        <div class="hero__shape" id="shape" aria-hidden="true"></div>
     </section>
 
     <div class="marquee" aria-hidden="true">
@@ -148,5 +159,6 @@
 </footer>
 
 <script src="script.js"></script>
+<script src="liquid-hero.js"></script>
 </body>
 </html>

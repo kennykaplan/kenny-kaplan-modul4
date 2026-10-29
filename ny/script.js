@@ -9,7 +9,7 @@
 
     /* Intro */
     var intro = $("intro"), count = $("introCount");
-    function start() { body.classList.add("ready"); }
+    function start() { body.classList.add("ready"); document.dispatchEvent(new Event("kds:ready")); }
     if (reduce) {
         start();
     } else {
@@ -38,7 +38,7 @@
     }
 
     /* Marquee + parallax, driven by scroll */
-    var track = $("marquee"), shape = $("shape");
+    var track = $("marquee");
     if (!reduce) {
         var ticking = false;
         function onScroll() {
@@ -47,7 +47,6 @@
             requestAnimationFrame(function () {
                 var y = window.scrollY;
                 track.style.transform = "translateX(" + (-y * 0.6 % (track.scrollWidth / 2)) + "px)";
-                shape.style.transform = "translateY(" + (y * 0.25) + "px) rotate(" + (y * 0.08) + "deg)";
                 ticking = false;
             });
         }
