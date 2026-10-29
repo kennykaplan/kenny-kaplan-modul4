@@ -1,7 +1,7 @@
 /*
  * Liquid particle hero (WebGL2 GPGPU) for Kaplan Digital Solutions.
  * Vanilla port of a React "sculpture hero" engine. The sculpture is a
- * KDS wordmark drawn to an offscreen canvas and rebuilt from GPU-simulated
+ * sculpture drawn to an offscreen canvas and rebuilt from GPU-simulated
  * particles sampled from its own pixels. The cursor turns the material
  * liquid; it settles back into the crisp image. Without WebGL2 the static
  * wordmark is shown.
@@ -822,34 +822,9 @@
         if (lose) lose.loseContext();
     };
 
-    /* ── KDS wordmark, drawn to an offscreen canvas ────────────────── */
-
+    /* Source: data-src (own image, needs CORS) or the procedural sculpture */
     function makeSource(mobile) {
-        var W = mobile ? 1000 : 1800;
-        var H = mobile ? 520 : 720;
-        var c = document.createElement("canvas");
-        c.width = W; c.height = H;
-        var ctx = c.getContext("2d");
-        var face = '"Archivo", "Arial Black", Arial, sans-serif';
-        var size = 400;
-        ctx.font = "800 " + size + "px " + face;
-        size *= (W * 0.9) / ctx.measureText("KDS").width;
-        ctx.font = "800 " + size + "px " + face;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "alphabetic";
-        var cap = ctx.measureText("H").actualBoundingBoxAscent || size * 0.7;
-        ctx.fillStyle = "#111110";
-        ctx.fillText("KDS", W / 2, H / 2 + cap / 2);
-        // the last letter in the brand orange
-        ctx.globalCompositeOperation = "source-atop";
-        ctx.fillStyle = "#ff4b1f";
-        ctx.fillRect(W * 0.665, 0, W, H);
-        // engraved scan lines
-        ctx.globalCompositeOperation = "destination-out";
-        var pitch = mobile ? 14 : 20;
-        for (var y = pitch / 2; y < H; y += pitch) ctx.fillRect(0, y, W, 5);
-        ctx.globalCompositeOperation = "source-over";
-        return c;
+        return window.KDSSculpture.make(mobile ? 1200 : 2400, mobile ? 800 : 960);
     }
 
     /* ── page glue ─────────────────────────────────────────────────── */
@@ -866,7 +841,7 @@
     var coarse = window.matchMedia("(hover: none), (pointer: coarse)");
     if (coarse.matches && hint) hint.textContent = "Rör vid formen";
 
-    var BG = hexToRgb(getComputedStyle(document.documentElement).getPropertyValue("--paper"), [0.925, 0.906, 0.863]);
+    var BG = hexToRgb(getComputedStyle(document.documentElement).getPropertyValue("--bg"), [0.925, 0.906, 0.863]);
     var engine = null, canvas = null, mobile = false, aspect = 2.5, loaded = false;
 
     function opts() {
@@ -909,26 +884,37 @@
         if (engine) engine.resize(w, h, rect);
     }
 
+    function getSource(cb) {
+        var url = root.dataset.src;
+        if (!url) { cb(makeSource(mobile)); return; }
+        var im = new Image();
+        im.crossOrigin = "anonymous";
+        im.onload = function () { cb(im); };
+        im.onerror = function () { cb(makeSource(mobile)); };
+        im.src = url;
+    }
+
     function load() {
-        var src = makeSource(mobile);
-        aspect = src.width / src.height;
-        fallback.width = src.width;
-        fallback.height = src.height;
-        var fctx = fallback.getContext("2d");
-        fctx.clearRect(0, 0, src.width, src.height);
-        fctx.drawImage(src, 0, 0);
-        loaded = true;
-        if (engine && root.dataset.gl !== "off") {
-            if (root.dataset.gl === "on") root.dataset.swap = "1";
-            try {
-                engine.onFirstFrame = function () { root.dataset.gl = "on"; delete root.dataset.swap; };
+        getSource(function (src) {
+            aspect = src.width / src.height;
+            fallback.width = src.width;
+            fallback.height = src.height;
+            var fctx = fallback.getContext("2d");
+            fctx.clearRect(0, 0, src.width, src.height);
+            fctx.drawImage(src, 0, 0);
+            loaded = true;
+            if (engine && root.dataset.gl !== "off") {
+                if (root.dataset.gl === "on") root.dataset.swap = "1";
+                try {
+                    engine.onFirstFrame = function () { root.dataset.gl = "on"; delete root.dataset.swap; };
+                    relayout();
+                    engine.setImage(src);
+                    relayout();
+                } catch (e) { root.dataset.gl = "off"; delete root.dataset.swap; }
+            } else {
                 relayout();
-                engine.setImage(src);
-                relayout();
-            } catch (e) { root.dataset.gl = "off"; delete root.dataset.swap; }
-        } else {
-            relayout();
-        }
+            }
+        });
     }
 
     function init() {
@@ -984,7 +970,5 @@
         });
     }
 
-    // start once the page intro curtain has lifted, so the particles assemble in view
-    if (document.body.classList.contains("ready") || reduce.matches) init();
-    else document.addEventListener("kds:ready", init, { once: true });
+    init();
 })();
