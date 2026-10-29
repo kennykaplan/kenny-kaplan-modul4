@@ -32,13 +32,19 @@
         return [243, 236, 224];
     }
 
-    function make(W, H) {
+    var tick = function () {
+        return new Promise(function (res) { setTimeout(res, 0); });
+    };
+
+    /* async + time-sliced: generation never holds the main thread for long */
+    async function make(W, H, q) {
+        q = q || 1;
         var c = document.createElement("canvas");
         c.width = W; c.height = H;
         var ctx = c.getContext("2d");
         var r = rng(11);
         var unit = Math.min(W / 2400, H / 960 * (W / H > 1.6 ? 1 : 1.4));
-        var STR = 300, SEG = 300, TAU = Math.PI * 2;
+        var STR = Math.round(300 * q), SEG = 300, TAU = Math.PI * 2;
         var sx = W * 0.355 / 2.7, sy = H * 0.31 / 3.1;
         var rot = -0.1, cr = Math.cos(rot), sr = Math.sin(rot);
 
@@ -55,9 +61,12 @@
         var hw = W / 2;
 
         for (var s = 0; s < STR; s++) {
+            if (s % 10 === 9) await tick();
             var o = (r() * 2 - 1);
-            var jit = (r() - 0.5) * 0.14;
+            var jit = (r() - 0.5) * 0.1;
             var wph = r() * 0.5;
+            var sAlpha = 0.5 + 0.4 * r();
+            var sWidth = 1.0 + r() * 1.2;
             var prev = null;
             for (var i = 0; i <= SEG; i++) {
                 var t = (i / SEG) * TAU;
@@ -78,7 +87,7 @@
                         var v = 0.5 + 0.38 * Math.cos(th + o * 0.7) + 0.16 * (p.z) + jit;
                         var col = tone(v);
                         var li = Math.min(17, Math.max(0, Math.floor((depth * 0.5 + 0.5) * 18)));
-                        layers[li].push(prev.x, prev.y, px, py, col[0] | 0, col[1] | 0, col[2] | 0, 0.55 + 0.4 * r());
+                        layers[li].push(prev.x, prev.y, px, py, col[0] | 0, col[1] | 0, col[2] | 0, sAlpha, sWidth);
                     } else if (r() < 0.55) {
                         dust.push(px, py, xn, v === undefined ? 0.5 : (0.5 + 0.38 * Math.cos(th)));
                     }
@@ -90,9 +99,10 @@
         ctx.lineCap = "round";
         for (var l = 0; l < layers.length; l++) {
             var a = layers[l];
-            for (var k = 0; k < a.length; k += 8) {
+            for (var k = 0; k < a.length; k += 9) {
+                if (k % 4500 === 0 && k) await tick();
                 ctx.strokeStyle = "rgba(" + a[k + 4] + "," + a[k + 5] + "," + a[k + 6] + "," + a[k + 7].toFixed(2) + ")";
-                ctx.lineWidth = (1.0 + r() * 1.2) * unit * 1.1;
+                ctx.lineWidth = a[k + 8] * unit * 1.1;
                 ctx.beginPath();
                 ctx.moveTo(a[k], a[k + 1]);
                 ctx.lineTo(a[k + 2], a[k + 3]);
@@ -108,13 +118,17 @@
             ctx.arc(x, y, rr, 0, TAU);
             ctx.fill();
         }
+        await tick();
         for (var d = 0; d < dust.length; d += 4) {
+            if (d % 4000 === 0 && d) await tick();
             var sp = H * 0.02 * (0.5 + 3 * dust[d + 2] * dust[d + 2]);
             dot(dust[d] + (r() + r() + r() - 1.5) * sp * 2, dust[d + 1] + (r() + r() + r() - 1.5) * sp * 2,
                 dust[d + 3] + (r() - 0.5) * 0.3, (0.7 + r() * r() * 2.6) * unit * 1.2);
         }
         // fine haze of grains along the whole form
-        for (var g = 0; g < 7000; g++) {
+        await tick();
+        for (var g = 0; g < 7000 * q; g++) {
+            if (g % 2000 === 0 && g) await tick();
             var pp = P(r() * TAU);
             var xn2 = Math.abs((pp.x - W / 2) / hw);
             var sp2 = H * 0.03 * (0.4 + 2.5 * xn2);

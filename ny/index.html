@@ -5,12 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Kaplan Digital Solutions</title>
     <meta name="description" content="Kaplan Digital Solutions bygger webbplatser och webbsystem.">
+    <meta name="theme-color" content="#ebe9e5">
+    <meta property="og:title" content="Kaplan Digital Solutions">
+    <meta property="og:description" content="Webbplatser och webbsystem som fungerar på riktigt.">
+    <meta property="og:type" content="website">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23151514'/%3E%3Ctext x='32' y='47' font-size='44' text-anchor='middle' font-style='italic' font-family='Georgia,serif' fill='%23ebe9e5'%3EK%3C/text%3E%3C/svg%3E">
+    <script>document.documentElement.className += " js";</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
+<a class="skip" href="#innehall">Hoppa till innehåll</a>
 
 <header class="top" id="top">
     <a href="#hem" class="top__brand" aria-label="Kaplan Digital Solutions, till början">
@@ -25,7 +33,7 @@
     </nav>
 </header>
 
-<main>
+<main id="innehall">
 
     <!-- Hero: liquid-particle sculpture. data-density 0.2–2, data-src = egen bild (CORS krävs) -->
     <section class="lq" id="hem" data-density="1">
@@ -33,25 +41,31 @@
         <span class="sr-only">Abstrakt skulptur av ett vridet band av trådar som reagerar på muspekaren.</span>
 
         <div class="lq__hint" aria-hidden="true">Rör dig över formen</div>
+        <button type="button" class="lq__pause" aria-pressed="false">Pausa rörelse</button>
         <div class="lq__spacer"></div>
 
         <div class="lq__content">
             <div>
-                <p class="lq__eyebrow reveal">Webb &amp; system — Kaplan Digital Solutions</p>
+                <p class="lq__eyebrow rise" style="--d:.05s">Webb &amp; system — Kaplan Digital Solutions</p>
                 <h1 class="lq__title">
-                    <span class="lq__line reveal">Sajter som</span>
-                    <span class="lq__line reveal"><em>folk använder.</em></span>
+                    <span class="lq__line"><span style="--d:.1s">Sajter som</span></span>
+                    <span class="lq__line"><span style="--d:.2s"><em>folk använder.</em></span></span>
                 </h1>
             </div>
             <div class="lq__aside">
-                <p class="lq__body reveal">Vi planerar, designar och bygger webbplatser och webbsystem för företag som vill ha något som fungerar på riktigt, inte bara något som ser bra ut i en presentation.</p>
-                <div class="lq__ctas reveal">
+                <p class="lq__body rise" style="--d:.35s">Vi planerar, designar och bygger webbplatser och webbsystem för företag som vill ha något som fungerar på riktigt, inte bara något som ser bra ut i en presentation.</p>
+                <div class="lq__ctas rise" style="--d:.45s">
                     <a href="#kontakt" class="btn">Starta ett projekt <span aria-hidden="true">→</span></a>
                     <a href="#arbeten" class="txtlink">Utvalda arbeten <span aria-hidden="true">→</span></a>
                 </div>
             </div>
         </div>
     </section>
+
+    <div class="band" aria-hidden="true">
+        <div class="band__row" data-dir="-1"><span>Webbplatser</span><i>✱</i><span>Webbsystem</span><i>✱</i><span>Underhåll</span><i>✱</i><span>Prestanda</span><i>✱</i><span>Webbplatser</span><i>✱</i><span>Webbsystem</span><i>✱</i><span>Underhåll</span><i>✱</i><span>Prestanda</span><i>✱</i></div>
+        <div class="band__row band__row--serif" data-dir="1"><span>Design</span><i>✱</i><span>Kod</span><i>✱</i><span>Detaljer</span><i>✱</i><span>Hastighet</span><i>✱</i><span>Design</span><i>✱</i><span>Kod</span><i>✱</i><span>Detaljer</span><i>✱</i><span>Hastighet</span><i>✱</i></div>
+    </div>
 
     <section class="sec" id="tjanster">
         <div class="sec__head">

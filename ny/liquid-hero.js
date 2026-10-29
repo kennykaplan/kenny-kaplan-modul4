@@ -824,7 +824,8 @@
 
     /* Source: data-src (own image, needs CORS) or the procedural sculpture */
     function makeSource(mobile) {
-        return window.KDSSculpture.make(mobile ? 1200 : 2400, mobile ? 800 : 960);
+        var light = coarse.matches || (engine && engine.lowPower);
+        return window.KDSSculpture.make(mobile ? 1200 : 2400, mobile ? 800 : 960, light ? 0.55 : 1);  // Promise
     }
 
     /* ── page glue ─────────────────────────────────────────────────── */
@@ -843,12 +844,17 @@
 
     var BG = hexToRgb(getComputedStyle(document.documentElement).getPropertyValue("--bg"), [0.925, 0.906, 0.863]);
     var engine = null, canvas = null, mobile = false, aspect = 2.5, loaded = false;
+    var lastRect = { x: 0, y: 0, w: 1, h: 1 };
+    var pauseBtn = root.querySelector(".lq__pause");
+    var paused = false;
+    try { paused = localStorage.getItem("kds-motion") === "off"; } catch (e) {}
+    var userMoved = false, swept = false;
 
     function opts() {
         return {
             interactive: true, strength: 1, radius: 220, density: parseFloat(root.dataset.density) || 1, dotSize: 1,
             spread: 1, turbulence: 1, liquid: 1, streaks: true, restStyle: "image",
-            returnSpeed: 1, ambient: false, ambientIntensity: 1, speed: 1,
+            returnSpeed: 1, ambient: false, ambientIntensity: 0.5, speed: 1,
             intro: true, reducedMotion: reduce.matches, bg: BG, imgBg: null
         };
     }
@@ -872,6 +878,7 @@
         var band = { top: (navEl ? navEl.offsetHeight : 60) + 24, bottom: content.offsetTop - 8 };
         if (mobile) band.bottom += content.offsetHeight * 0.25;
         var rect = computeRect(w, band);
+        lastRect = rect;
         fallback.style.left = rect.x + "px";
         fallback.style.top = rect.y + "px";
         fallback.style.width = rect.w + "px";
@@ -881,16 +888,17 @@
             hint.style.left = clamp(rect.x + rect.w / 2, 80, w - 80) + "px";
             hint.style.top = Math.min(rect.y + rect.h + 6, band.bottom - 14) + "px";
         }
+        if (pauseBtn) pauseBtn.style.top = Math.min(rect.y + rect.h + 6, band.bottom - 14) + "px";
         if (engine) engine.resize(w, h, rect);
     }
 
     function getSource(cb) {
         var url = root.dataset.src;
-        if (!url) { cb(makeSource(mobile)); return; }
+        if (!url) { makeSource(mobile).then(cb); return; }
         var im = new Image();
         im.crossOrigin = "anonymous";
         im.onload = function () { cb(im); };
-        im.onerror = function () { cb(makeSource(mobile)); };
+        im.onerror = function () { makeSource(mobile).then(cb); };
         im.src = url;
     }
 
@@ -903,10 +911,12 @@
             fctx.clearRect(0, 0, src.width, src.height);
             fctx.drawImage(src, 0, 0);
             loaded = true;
+            relayout();
+            root.dataset.sized = "1";
             if (engine && root.dataset.gl !== "off") {
                 if (root.dataset.gl === "on") root.dataset.swap = "1";
                 try {
-                    engine.onFirstFrame = function () { root.dataset.gl = "on"; delete root.dataset.swap; };
+                    engine.onFirstFrame = function () { root.dataset.gl = "on"; delete root.dataset.swap; setTimeout(sweep, engine.opts.intro && !engine.opts.reducedMotion ? 3600 : 500); };
                     relayout();
                     engine.setImage(src);
                     relayout();
@@ -917,6 +927,49 @@
         });
     }
 
+    /* ── motion preferences, pause control, invitation sweep ───── */
+    function applyMotion() {
+        var calm = paused || reduce.matches;
+        if (engine) engine.setOptions({ reducedMotion: calm, ambient: !calm && !engine.lowPower, intro: !calm });
+        if (pauseBtn) {
+            pauseBtn.hidden = reduce.matches || !engine;
+            pauseBtn.setAttribute("aria-pressed", paused ? "true" : "false");
+            pauseBtn.textContent = paused ? "Spela rörelse" : "Pausa rörelse";
+        }
+    }
+
+    /* one slow pass across the form, so the effect is seen without any input */
+    function sweep() {
+        if (!engine || swept || userMoved || paused || reduce.matches || coarse.matches) return;
+        swept = true;
+        var t0 = performance.now(), D = 2600;
+        (function step(now) {
+            if (userMoved) return;
+            var p = Math.min(1, (now - t0) / D);
+            var e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+            var r = lastRect;
+            engine.pointer("move", r.x + r.w * (0.12 + 0.76 * e), r.y + r.h * (0.5 + 0.16 * Math.sin(p * Math.PI * 2.4)), false);
+            if (p < 1) requestAnimationFrame(step);
+            else engine.pointer("leave", 0, 0, false);
+        })(t0);
+    }
+
+    window.KDSHero = {
+        setScroll: function (p) {
+            if (engine && !paused && !reduce.matches) engine.setOptions({ ambientIntensity: 0.5 + p * 1.4 });
+        }
+    };
+
+    if (pauseBtn) {
+        pauseBtn.addEventListener("click", function () {
+            paused = !paused;
+            try { localStorage.setItem("kds-motion", paused ? "off" : "on"); } catch (e) {}
+            applyMotion();
+        });
+    }
+    reduce.addEventListener("change", applyMotion);
+    root.addEventListener("pointermove", function () { userMoved = true; }, { passive: true });
+
     function init() {
         canvas = document.createElement("canvas");
         canvas.className = "lq__canvas";
@@ -926,6 +979,7 @@
         } catch (e) {
             root.dataset.gl = "off";
         }
+        applyMotion();
 
         var ro = new ResizeObserver(relayout);
         ro.observe(root);
@@ -936,7 +990,6 @@
                 es.forEach(function (e) { engine.setVisible(e.isIntersecting && !document.hidden); });
             }).observe(root);
             document.addEventListener("visibilitychange", function () { engine.setVisible(!document.hidden); });
-            reduce.addEventListener("change", function () { engine.setOptions({ reducedMotion: reduce.matches }); });
 
             var pos = function (e) {
                 var b = root.getBoundingClientRect();
@@ -970,5 +1023,11 @@
         });
     }
 
-    init();
+    // start after first paint, in idle time, so the hero text is never held up by the WebGL setup
+    function schedule() {
+        if ("requestIdleCallback" in window) requestIdleCallback(init, { timeout: 800 });
+        else setTimeout(init, 200);
+    }
+    if (document.readyState === "complete") schedule();
+    else window.addEventListener("load", schedule, { once: true });
 })();
