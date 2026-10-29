@@ -629,7 +629,7 @@
         var fk = this.presenceTarget > this.flowing ? 0.05 : 0.018;
         this.flowing += (this.presenceTarget - this.flowing) * (1 - Math.pow(1 - fk, dt));
         if (this.flowing < 0.002 && this.presenceTarget === 0) this.flowing = 0;
-        if (this.introT < 1) this.introT = Math.min(1, this.introT + Math.min(rawMs, 100) / 3200);
+        if (this.introT < 1) this.introT = Math.min(1, this.introT + Math.min(rawMs, 100) / 1900);
 
         var interacting = this.presence > 0.001 || this.burst > 0;
         this.settle = interacting ? 0 : this.settle + dt;
@@ -916,7 +916,7 @@
             if (engine && root.dataset.gl !== "off") {
                 if (root.dataset.gl === "on") root.dataset.swap = "1";
                 try {
-                    engine.onFirstFrame = function () { root.dataset.gl = "on"; delete root.dataset.swap; setTimeout(sweep, engine.opts.intro && !engine.opts.reducedMotion ? 3600 : 500); };
+                    engine.onFirstFrame = function () { root.dataset.gl = "on"; delete root.dataset.swap; setTimeout(sweep, engine.opts.intro && !engine.opts.reducedMotion ? 2000 : 400); };
                     relayout();
                     engine.setImage(src);
                     relayout();
